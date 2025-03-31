@@ -1,0 +1,546 @@
+openapi: 3.0.0
+info:
+  title: Prompt Share API
+  version: 1.0.0
+  description: API documentation for Prompt Share platform
+  contact:
+    name: Prompt Share Team
+    email: support@promptshare.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.promptshare.com
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Token:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          example: 3600
+
+    TokenData:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "admin@promptshare.com"
+        role:
+          type: string
+          enum: [ADMIN, SELLER, USER]
+          example: "ADMIN"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@promptshare.com"
+        password:
+          type: string
+          format: password
+          example: "admin123"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "admin@promptshare.com"
+        username:
+          type: string
+          example: "admin"
+        full_name:
+          type: string
+          example: "System Administrator"
+        role:
+          type: string
+          enum: [ADMIN, SELLER, USER]
+          example: "ADMIN"
+        is_active:
+          type: boolean
+          example: true
+        is_verified:
+          type: boolean
+          example: true
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "AI Writing"
+        description:
+          type: string
+          example: "Prompts for AI writing assistance"
+        icon:
+          type: string
+          example: "pencil"
+        is_active:
+          type: boolean
+          example: true
+        prompts_count:
+          type: integer
+          example: 10
+
+    CategoryCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "AI Writing"
+        description:
+          type: string
+          example: "Prompts for AI writing assistance"
+        icon:
+          type: string
+          example: "pencil"
+
+    CategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "AI Writing Tools"
+        description:
+          type: string
+          example: "Updated description"
+        icon:
+          type: string
+          example: "pencil"
+
+    Prompt:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Professional Email Writer"
+        description:
+          type: string
+          example: "Write professional emails with AI"
+        content:
+          type: string
+          example: "Write a professional email to..."
+        price:
+          type: number
+          format: float
+          example: 9.99
+        category_id:
+          type: integer
+          example: 1
+        seller_id:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
+          example: true
+        is_featured:
+          type: boolean
+          example: false
+        views_count:
+          type: integer
+          example: 100
+        sales_count:
+          type: integer
+          example: 10
+        rating:
+          type: number
+          format: float
+          example: 4.5
+
+    PromptCreate:
+      type: object
+      required:
+        - title
+        - description
+        - content
+        - price
+        - category_id
+      properties:
+        title:
+          type: string
+          example: "Professional Email Writer"
+        description:
+          type: string
+          example: "Write professional emails with AI"
+        content:
+          type: string
+          example: "Write a professional email to..."
+        price:
+          type: number
+          format: float
+          example: 9.99
+        category_id:
+          type: integer
+          example: 1
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["email", "writing", "professional"]
+
+    PromptUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Updated Title"
+        description:
+          type: string
+          example: "Updated description"
+        content:
+          type: string
+          example: "Updated content"
+        price:
+          type: number
+          format: float
+          example: 19.99
+        category_id:
+          type: integer
+          example: 2
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["updated", "tags"]
+
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login to get access token
+      description: Authenticate user and get JWT access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Incorrect email or password"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Invalid email format"
+
+  /api/v1/admin/categories:
+    get:
+      summary: List all categories
+      description: Get a list of all categories with pagination (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+          description: Maximum number of records to return
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '403':
+          description: Forbidden - Not an admin user
+
+    post:
+      summary: Create a new category
+      description: Create a new category (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '403':
+          description: Forbidden - Not an admin user
+
+  /api/v1/admin/categories/{category_id}:
+    parameters:
+      - in: path
+        name: category_id
+        required: true
+        schema:
+          type: integer
+        description: ID of the category
+
+    get:
+      summary: Get a single category
+      description: Get details of a single category by ID (admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found
+        '403':
+          description: Forbidden - Not an admin user
+
+    put:
+      summary: Update a category
+      description: Update an existing category (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdate'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found
+        '403':
+          description: Forbidden - Not an admin user
+
+    delete:
+      summary: Delete a category
+      description: Delete a category (admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Category deleted successfully
+        '404':
+          description: Category not found
+        '403':
+          description: Forbidden - Not an admin user
+
+  /api/v1/prompts:
+    get:
+      summary: List prompts
+      description: Get a list of prompts with filtering and pagination
+      parameters:
+        - in: query
+          name: category_id
+          schema:
+            type: integer
+          description: Filter by category ID
+        - in: query
+          name: min_price
+          schema:
+            type: number
+            format: float
+          description: Minimum price filter
+        - in: query
+          name: max_price
+          schema:
+            type: number
+            format: float
+          description: Maximum price filter
+        - in: query
+          name: is_featured
+          schema:
+            type: boolean
+          description: Filter featured prompts
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search in title and description
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [price, views_count, sales_count, rating, created_at]
+          description: Sort field
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+      responses:
+        '200':
+          description: List of prompts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Prompt'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total_pages:
+                    type: integer
+
+    post:
+      summary: Create a new prompt
+      description: Create a new prompt (seller only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptCreate'
+      responses:
+        '201':
+          description: Prompt created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prompt'
+        '403':
+          description: Forbidden - Not a seller
+
+  /api/v1/prompts/{prompt_id}:
+    parameters:
+      - in: path
+        name: prompt_id
+        required: true
+        schema:
+          type: integer
+        description: ID of the prompt
+
+    get:
+      summary: Get a single prompt
+      description: Get details of a single prompt by ID
+      responses:
+        '200':
+          description: Prompt details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prompt'
+        '404':
+          description: Prompt not found
+
+    put:
+      summary: Update a prompt
+      description: Update an existing prompt (owner only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptUpdate'
+      responses:
+        '200':
+          description: Prompt updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prompt'
+        '404':
+          description: Prompt not found
+        '403':
+          description: Forbidden - Not the prompt owner
+
+    delete:
+      summary: Delete a prompt
+      description: Delete a prompt (owner only)
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Prompt deleted successfully
+        '404':
+          description: Prompt not found
+        '403':
+          description: Forbidden - Not the prompt owner 
