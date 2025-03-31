@@ -8,16 +8,19 @@ interface Category {
 
 interface CategoryNavProps {
   categories: Category[]
+  selectedId?: number
+  onSelect?: (id: number) => void
 }
 
-export function CategoryNav({ categories }: CategoryNavProps) {
+export function CategoryNav({ categories, selectedId, onSelect }: CategoryNavProps) {
   return (
     <nav className="flex gap-2 overflow-x-auto pb-2">
       {categories.map((category) => (
         <Button
           key={category.id}
-          variant="outline"
+          variant={selectedId === category.id ? "default" : "outline"}
           className="flex items-center gap-2 whitespace-nowrap"
+          onClick={() => onSelect?.(category.id)}
         >
           <CategoryIcon name={category.icon} />
           {category.name}

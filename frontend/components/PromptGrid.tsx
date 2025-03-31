@@ -2,18 +2,25 @@ import Image from 'next/image'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 
 interface Seller {
-  name: string
-  isTopSeller: boolean
+  id: number
+  username: string
+  is_top_seller: boolean
 }
 
 interface Prompt {
   id: number
   title: string
+  description: string
   price: number
-  image: string
+  image_url: string
   rating: number
-  reviewCount: number
+  review_count: number
+  view_count: number
+  created_at: string
+  updated_at: string
   seller: Seller
+  category_id: number
+  is_featured: boolean
 }
 
 interface PromptGridProps {
@@ -28,7 +35,7 @@ export function PromptGrid({ prompts }: PromptGridProps) {
           {/* Image */}
           <div className="relative aspect-[4/3]">
             <Image
-              src={prompt.image}
+              src={prompt.image_url}
               alt={prompt.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform"
@@ -47,15 +54,15 @@ export function PromptGrid({ prompts }: PromptGridProps) {
             <div className="mt-2 flex items-center gap-1 text-sm text-gray-600">
               <StarIcon className="w-4 h-4 text-yellow-400" />
               <span>{prompt.rating.toFixed(1)}</span>
-              <span>({prompt.reviewCount})</span>
+              <span>({prompt.review_count})</span>
             </div>
           </CardContent>
 
           {/* Footer */}
           <CardFooter className="p-4 pt-0">
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>{prompt.seller.name}</span>
-              {prompt.seller.isTopSeller && (
+              <span>{prompt.seller.username}</span>
+              {prompt.seller.is_top_seller && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                   <VerifiedIcon className="w-3 h-3" />
                   Top Seller

@@ -1,48 +1,49 @@
+'use client'
+
 import { HeroSection } from '@/components/HeroSection'
 import { CategoryNav } from '@/components/CategoryNav'
 import { PromptGrid } from '@/components/PromptGrid'
 import { SearchBar } from '@/components/SearchBar'
+import useSWR from 'swr'
+import { getCategories, getPrompts } from '@/lib/api'
+import { useState } from 'react'
 
 export default function Home() {
-  // TODO: Fetch categories and prompts from API
-  const categories = [
-    { id: 1, name: 'Models', icon: 'cube' },
-    { id: 2, name: 'Art', icon: 'paint-brush' },
-    { id: 3, name: 'Logos', icon: 'badge' },
-    { id: 4, name: 'Graphics', icon: 'image' },
-    { id: 5, name: 'Productivity', icon: 'sparkles' },
-    { id: 6, name: 'Marketing', icon: 'chart-bar' },
-    { id: 7, name: 'Photography', icon: 'camera' },
-    { id: 8, name: 'Games', icon: 'puzzle-piece' },
-  ]
+  const [searchParams, setSearchParams] = useState({
+    page: 1,
+    page_size: 12
+  })
 
-  const prompts = [
-    {
-      id: 1,
-      title: "Folk Monster Icons",
-      price: 3.99,
-      image: "/prompts/folk-monsters.jpg",
-      rating: 4.8,
-      reviewCount: 156,
-      seller: {
-        name: "artmaster",
-        isTopSeller: true
-      }
-    },
-    {
-      id: 2,
-      title: "Bold Color Ink Icons",
-      price: 2.99,
-      image: "/prompts/ink-icons.jpg",
-      rating: 5.0,
-      reviewCount: 89,
-      seller: {
-        name: "inkmaster",
-        isTopSeller: true
-      }
-    },
-    // Add more prompts...
-  ]
+  const { data: categoriesData } = useSWR('/categories', () => 
+    getCategories().then(res => res.data)
+  )
+
+  const { data: promptsData } = useSWR(
+    ['/prompts', searchParams],
+    () => getPrompts(searchParams).then(res => res.data)
+  )
+
+  const { data: featuredPromptsData } = useSWR(
+    '/prompts/featured',
+    () => getPrompts({ is_featured: true, page_size: 6 }).then(res => res.data)
+  )
+
+  const { data: latestPromptsData } = useSWR(
+    '/prompts/latest',
+    () => getPrompts({ sort_by: 'created_at', sort_order: 'desc', page_size: 6 }).then(res => res.data)
+  )
+
+  const handleSearch = (search: string) => {
+    setSearchParams(prev => ({ ...prev, search, page: 1 }))
+  }
+
+  const handleCategoryClick = (categoryId: number) => {
+    setSearchParams(prev => ({ 
+      ...prev, 
+      category_id: prev.category_id === categoryId ? undefined : categoryId,
+      page: 1 
+    }))
+  }
 
   return (
     <main>
@@ -52,20 +53,24 @@ export default function Home() {
         <div className="flex flex-col gap-8">
           {/* Search and Categories */}
           <div className="flex flex-col gap-6">
-            <SearchBar />
-            <CategoryNav categories={categories} />
+            <SearchBar onSearch={handleSearch} />
+            <CategoryNav 
+              categories={categoriesData?.items || []} 
+              selectedId={searchParams.category_id}
+              onSelect={handleCategoryClick}
+            />
           </div>
 
           {/* Featured Prompts */}
           <section>
             <h2 className="text-2xl font-bold mb-6">Featured Prompts</h2>
-            <PromptGrid prompts={prompts} />
+            <PromptGrid prompts={featuredPromptsData?.items || []} />
           </section>
 
           {/* Latest Prompts */}
           <section>
             <h2 className="text-2xl font-bold mb-6">Latest Prompts</h2>
-            <PromptGrid prompts={prompts} />
+            <PromptGrid prompts={latestPromptsData?.items || []} />
           </section>
         </div>
       </div>

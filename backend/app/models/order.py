@@ -1,14 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Enum
 from sqlalchemy.orm import relationship
-import enum
-
 from app.db.base import Base
-
-class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    PAID = "paid"
-    FAILED = "failed"
-    REFUNDED = "refunded"
+from app.models.enums import OrderStatus
 
 class Order(Base):
     id = Column(Integer, primary_key=True, index=True)

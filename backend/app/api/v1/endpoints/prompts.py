@@ -2,13 +2,13 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.schemas.prompt import PromptInDB, PromptFilter, PromptCreate, PromptUpdate
+from app.schemas.prompt import PromptInDB, PromptFilter, PromptCreate, PromptUpdate, PromptResponse
 from app.services import prompt as prompt_service
 from app.models.user import UserRole
 
 router = APIRouter()
 
-@router.get("/", response_model=dict)
+@router.get("/", response_model=PromptResponse)
 def list_prompts(
     db: Session = Depends(deps.get_db),
     category_id: int = None,
@@ -37,14 +37,15 @@ def list_prompts(
     )
 
     prompts, total_count = prompt_service.get_prompts(db, filter_params)
+    total_pages = (total_count + page_size - 1) // page_size
 
-    return {
-        "items": prompts,
-        "total": total_count,
-        "page": page,
-        "page_size": page_size,
-        "total_pages": (total_count + page_size - 1) // page_size,
-    }
+    return PromptResponse(
+        items=prompts,
+        total=total_count,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
 
 @router.get("/{prompt_id}", response_model=PromptInDB)
 def get_prompt(

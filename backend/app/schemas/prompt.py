@@ -1,7 +1,15 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 from datetime import datetime
 from app.models.prompt import Prompt
+
+class UserBase(BaseModel):
+    username: str
+    full_name: str
+    is_top_seller: bool = False
+
+    class Config:
+        from_attributes = True
 
 class PromptBase(BaseModel):
     title: str
@@ -24,6 +32,7 @@ class PromptUpdate(PromptBase):
 class PromptInDB(PromptBase):
     id: int
     seller_id: int
+    seller: UserBase
     is_active: bool
     is_featured: bool
     views_count: int
@@ -44,4 +53,11 @@ class PromptFilter(BaseModel):
     sort_by: Optional[str] = Field(None, description="Sort by: price, rating, sales, views")
     sort_order: Optional[str] = Field("desc", description="Sort order: asc or desc")
     page: int = Field(1, ge=1)
-    page_size: int = Field(10, ge=1, le=100) 
+    page_size: int = Field(10, ge=1, le=100)
+
+class PromptResponse(BaseModel):
+    items: List[PromptInDB]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int 

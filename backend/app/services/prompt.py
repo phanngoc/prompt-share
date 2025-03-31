@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, desc, asc
 from app.models.prompt import Prompt
 from app.schemas.prompt import PromptFilter, PromptCreate, PromptUpdate
@@ -12,7 +12,7 @@ def get_prompts(
     Get prompts with filtering, searching, and pagination
     Returns tuple of (prompts, total_count)
     """
-    query = db.query(Prompt).filter(Prompt.is_active == True)
+    query = db.query(Prompt).options(joinedload(Prompt.seller)).filter(Prompt.is_active == True)
 
     # Apply filters
     if filter_params.category_id:
@@ -60,7 +60,7 @@ def get_prompts(
 
 def get_prompt(db: Session, prompt_id: int) -> Optional[Prompt]:
     """Get a single prompt by ID"""
-    return db.query(Prompt).filter(Prompt.id == prompt_id, Prompt.is_active == True).first()
+    return db.query(Prompt).options(joinedload(Prompt.seller)).filter(Prompt.id == prompt_id).first()
 
 def increment_views(db: Session, prompt_id: int) -> None:
     """Increment the views count of a prompt"""
@@ -139,6 +139,7 @@ def get_user_prompts(
     """Get all prompts created by a user"""
     return (
         db.query(Prompt)
+        .options(joinedload(Prompt.seller))
         .filter(Prompt.seller_id == seller_id)
         .offset(skip)
         .limit(limit)

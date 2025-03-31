@@ -1,21 +1,35 @@
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
-export function SearchBar() {
+interface SearchBarProps {
+  onSearch?: (query: string) => void
+}
+
+export function SearchBar({ onSearch }: SearchBarProps) {
+  const [query, setQuery] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSearch?.(query)
+  }
+
   return (
-    <div className="flex gap-4">
+    <form onSubmit={handleSubmit} className="flex gap-4">
       <div className="flex-1 flex items-center gap-2 px-4 py-2 rounded-lg border bg-background">
         <SearchIcon className="w-5 h-5 text-gray-400" />
         <input
           type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Search prompts..."
           className="flex-1 bg-transparent border-0 focus:outline-none"
         />
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" type="button">
           <SlidersIcon className="w-5 h-5" />
         </Button>
       </div>
-      <Button>Search</Button>
-    </div>
+      <Button type="submit">Search</Button>
+    </form>
   )
 }
 
