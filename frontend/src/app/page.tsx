@@ -1,61 +1,99 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// Mock data for featured prompts - in a real application, this would come from an API
-const featuredPrompts = [
-  {
-    id: 1,
-    title: "Creative Story Generator",
-    description: "Generate compelling short stories with intricate plots and well-developed characters.",
-    category: "Creative Writing",
-    rating: 4.8,
-    author: "WriterAI",
-    downloads: 3420,
-    image: "/images/story-generator.jpg"
-  },
-  {
-    id: 2,
-    title: "Technical Documentation Creator",
-    description: "Create clear, concise technical documentation for software projects.",
-    category: "Programming",
-    rating: 4.7,
-    author: "DevHelper",
-    downloads: 2895,
-    image: "/images/tech-doc.jpg"
-  },
-  {
-    id: 3,
-    title: "Marketing Copy Assistant",
-    description: "Craft persuasive marketing copy that converts readers into customers.",
-    category: "Marketing",
-    rating: 4.9,
-    author: "CopyGenius",
-    downloads: 4150,
-    image: "/images/marketing.jpg"
-  },
-  {
-    id: 4,
-    title: "Academic Essay Planner",
-    description: "Structure well-researched academic essays with proper citations and arguments.",
-    category: "Education",
-    rating: 4.6,
-    author: "ScholarBot",
-    downloads: 1950,
-    image: "/images/academic.jpg"
-  },
-];
+async function getFeaturedPrompts() {
+  // Server component - can fetch data without useEffect
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/prompts/?is_featured=true&page_size=4`, {
+      cache: 'no-store' // Don't cache this data
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to fetch featured prompts');
+    }
+    
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching featured prompts:', error);
+    return { 
+      items: [], 
+      total: 0, 
+      page: 1, 
+      page_size: 4, 
+      total_pages: 0 
+    };
+  }
+}
 
-// Mock data for categories
-const categories = [
-  { id: 1, name: "Creative Writing", count: 245, icon: "✍️" },
-  { id: 2, name: "Programming", count: 189, icon: "💻" },
-  { id: 3, name: "Marketing", count: 173, icon: "📈" },
-  { id: 4, name: "Education", count: 210, icon: "📚" },
-  { id: 5, name: "Business", count: 156, icon: "💼" },
-  { id: 6, name: "Personal Growth", count: 142, icon: "🌱" },
-];
+async function getCategories() {
+  try {
+    // Add debug information to see what URL is being used
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/categories`;
+    console.log('Fetching categories from:', apiUrl);
+    
+    const res = await fetch(apiUrl, {
+      cache: 'no-store',
+      // Add a timeout to prevent hanging requests
+      next: { revalidate: 3600 }, // Revalidate every hour at most
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!res.ok) {
+      // Log more detailed error information
+      console.error('Categories API error:', {
+        status: res.status,
+        statusText: res.statusText
+      });
+      
+      // Return empty array instead of throwing to prevent the page from crashing
+      return [];
+    }
+    
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    // Return fallback data for development/demo purposes
+    return [
+      { id: 1, name: "Creative Writing", prompt_count: 12 },
+      { id: 2, name: "Programming", prompt_count: 8 },
+      { id: 3, name: "Marketing", prompt_count: 15 },
+      { id: 4, name: "Education", prompt_count: 10 },
+      { id: 5, name: "Business", prompt_count: 7 },
+      { id: 6, name: "Personal Growth", prompt_count: 9 }
+    ];
+  }
+}
 
-export default function Home() {
+// Emoji mapping for categories
+const categoryEmojis: Record<string, string> = {
+  "Creative Writing": "✍️",
+  "Programming": "💻",
+  "Marketing": "📈",
+  "Education": "📚",
+  "Business": "💼",
+  "Personal Growth": "🌱",
+  "Art": "🎨",
+  "Science": "🧪",
+  "Technology": "⚙️",
+  "Health": "🩺",
+  "Lifestyle": "🌿",
+  "Other": "🔍"
+};
+
+export default async function Home() {
+  // Fetch data in parallel
+  const [featuredPromptsData, categoriesData] = await Promise.all([
+    getFeaturedPrompts(),
+    getCategories()
+  ]);
+
+  const featuredPrompts = featuredPromptsData?.items || [];
+  const categories = categoriesData || [];
+  
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -114,42 +152,64 @@ export default function Home() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredPrompts.map(prompt => (
-              <div key={prompt.id} className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-48 bg-gray-200 dark:bg-gray-600 relative">
-                  {/* Fallback colored div if image is not available */}
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{prompt.category}</div>
-                  <h3 className="text-xl font-bold mb-2">{prompt.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{prompt.description}</p>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="text-yellow-400 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          {featuredPrompts.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">No featured prompts available at the moment.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredPrompts.map(prompt => (
+                <div key={prompt.id} className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 dark:bg-gray-600 relative">
+                    {prompt.image_url ? (
+                      <Image 
+                        src={prompt.image_url}
+                        alt={prompt.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
-                        <span className="ml-1">{prompt.rating}</span>
                       </div>
-                      <span className="mx-2 text-gray-500 dark:text-gray-400">•</span>
-                      <span className="text-gray-500 dark:text-gray-400 text-sm">{prompt.downloads} uses</span>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
+                      {prompt.category ? prompt.category.name : "Uncategorized"}
                     </div>
-                    <button className="text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900 p-2 rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                    </button>
+                    <h3 className="text-xl font-bold mb-2">{prompt.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                      {prompt.description ? (
+                        prompt.description.length > 100 
+                          ? `${prompt.description.substring(0, 100)}...` 
+                          : prompt.description
+                      ) : "No description available"}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <div className="text-yellow-400 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span className="ml-1">{prompt.average_rating || "N/A"}</span>
+                        </div>
+                        <span className="mx-2 text-gray-500 dark:text-gray-400">•</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">{prompt.usage_count || 0} uses</span>
+                      </div>
+                      <Link href={`/prompts/${prompt.id}`} className="text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -157,19 +217,30 @@ export default function Home() {
       <section className="py-16 px-4 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold mb-10">Browse by Category</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map(category => (
-              <Link 
-                key={category.id}
-                href={`/category/${category.id}`}
-                className="bg-white dark:bg-gray-700 rounded-xl p-6 text-center hover:shadow-md transition-shadow"
-              >
-                <div className="text-4xl mb-2">{category.icon}</div>
-                <h3 className="font-semibold mb-1">{category.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{category.count} prompts</p>
-              </Link>
-            ))}
-          </div>
+          
+          {categories.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500">No categories available at the moment.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {categories.map(category => (
+                <Link 
+                  key={category.id}
+                  href={`/category/${category.id}`}
+                  className="bg-white dark:bg-gray-700 rounded-xl p-6 text-center hover:shadow-md transition-shadow"
+                >
+                  <div className="text-4xl mb-2">
+                    {categoryEmojis[category.name] || "🔍"}
+                  </div>
+                  <h3 className="font-semibold mb-1">{category.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {category.prompt_count || 0} prompts
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -227,6 +298,7 @@ export default function Home() {
                 </a>
               </div>
             </div>
+            
             <div>
               <h3 className="font-semibold mb-4">Resources</h3>
               <ul className="space-y-2">

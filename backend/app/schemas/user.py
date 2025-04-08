@@ -28,4 +28,11 @@ class User(UserInDB):
     pass
 
 class UserWithPassword(User):
-    hashed_password: str 
+    hashed_password: str
+
+class UserResponse(UserInDB):
+    username: Optional[str] = None
+    is_verified: Optional[bool] = False
+
+    class Config:
+        from_attributes = True

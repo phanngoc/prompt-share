@@ -11,7 +11,6 @@ def get_categories(
     """Get all categories with pagination"""
     return (
         db.query(Category)
-        .filter(Category.is_active == True)
         .offset(skip)
         .limit(limit)
         .all()
@@ -21,7 +20,7 @@ def get_category(db: Session, category_id: int) -> Optional[Category]:
     """Get a single category by ID"""
     return (
         db.query(Category)
-        .filter(Category.id == category_id, Category.is_active == True)
+        .filter(Category.id == category_id)
         .first()
     )
 
@@ -30,10 +29,7 @@ def create_category(
     category_data: CategoryCreate,
 ) -> Category:
     """Create a new category"""
-    db_category = Category(
-        **category_data.dict(),
-        is_active=True,
-    )
+    db_category = Category(**category_data.dict())
     db.add(db_category)
     db.commit()
     db.refresh(db_category)
@@ -61,20 +57,20 @@ def delete_category(
     db: Session,
     category_id: int,
 ) -> bool:
-    """Soft delete a category"""
+    """Delete a category"""
     category = get_category(db, category_id)
     if not category:
         return False
     
-    category.is_active = False
+    db.delete(category)
     db.commit()
     return True
 
 def get_category_prompts_count(db: Session, category_id: int) -> int:
-    """Get the number of active prompts in a category"""
+    """Get the number of prompts in a category"""
     from app.models.prompt import Prompt
     return (
         db.query(Prompt)
-        .filter(Prompt.category_id == category_id, Prompt.is_active == True)
+        .filter(Prompt.category_id == category_id)
         .count()
-    ) 
+    )
