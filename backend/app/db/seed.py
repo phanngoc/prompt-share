@@ -577,7 +577,7 @@ def seed_database(db: Session):
         db.add(prompt)
     
     # Generate additional prompts using templates
-    for i in range(50):  # Increased from 30 to 50 prompts
+    for i in range(100):  # Increased from 50 to 100 prompts
         category = random.choice(categories)
         seller = random.choice(sellers)
         template = random.choice(prompt_templates)
