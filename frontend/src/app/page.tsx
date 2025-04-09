@@ -4,7 +4,7 @@ import Link from "next/link";
 async function getFeaturedPrompts() {
   // Server component - can fetch data without useEffect
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/prompts/?is_featured=true&page_size=4`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/prompts/?is_featured=true&page_size=4`, {
       cache: 'no-store' // Don't cache this data
     });
     
@@ -29,7 +29,7 @@ async function getFeaturedPrompts() {
 async function getCategories() {
   try {
     // Add debug information to see what URL is being used
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/categories`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/categories`;
     console.log('Fetching categories from:', apiUrl);
     
     const res = await fetch(apiUrl, {

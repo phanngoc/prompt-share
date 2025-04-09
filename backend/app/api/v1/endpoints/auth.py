@@ -1,12 +1,12 @@
 from datetime import timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.api import deps
 from app.core import security
 from app.core.config import settings
-from app.schemas.token import Token, TokenWithUser
+from app.schemas.token import Token, TokenWithUser, LoginRequest
 from app.schemas.user import UserCreate, UserResponse
 from app.services import user as user_service
 
@@ -14,15 +14,17 @@ router = APIRouter()
 
 @router.post("/login", response_model=TokenWithUser)
 def login(
-    db: Session = Depends(deps.get_db),
-    form_data: OAuth2PasswordRequestForm = Depends()
+    login_data: LoginRequest,
+    db: Session = Depends(deps.get_db)
 ) -> Any:
     """
-    OAuth2 compatible token login, get an access token for future requests
+    JSON compatible token login, get an access token for future requests
     """
+    print('login_data', login_data)
     user = user_service.authenticate_user(
-        db, email=form_data.username, password=form_data.password
+        db, email=login_data.email, password=login_data.password
     )
+    print('user', user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,15 +37,12 @@ def login(
             detail="Inactive user"
         )
     
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        user.id, expires_delta=access_token_expires
-    )
+    # Generate tokens
+    tokens = security.create_tokens(user)
     
-    # Return token with user information
+    # Return tokens with user information
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+        **tokens,
         "user": {
             "id": user.id,
             "email": user.email,
@@ -54,6 +53,35 @@ def login(
             "is_verified": user.is_verified
         }
     }
+
+@router.post("/refresh-token", response_model=Token)
+def refresh_token(
+    db: Session = Depends(deps.get_db),
+    refresh_token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))
+) -> Any:
+    """
+    Refresh access token using refresh token
+    """
+    # Verify refresh token
+    payload = security.verify_token(refresh_token, token_type="refresh")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user from database
+    user = user_service.get_user(db, user_id=int(payload["sub"]))
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Generate new tokens
+    return security.create_tokens(user)
 
 @router.post("/register", response_model=TokenWithUser, status_code=status.HTTP_201_CREATED)
 def register(
@@ -83,16 +111,12 @@ def register(
     # Create new user
     user = user_service.create_user(db, user_data=user_data)
     
-    # Generate access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        user.id, expires_delta=access_token_expires
-    )
+    # Generate tokens
+    tokens = security.create_tokens(user)
     
-    # Return token with user information
+    # Return tokens with user information
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+        **tokens,
         "user": {
             "id": user.id,
             "email": user.email,
@@ -102,23 +126,6 @@ def register(
             "is_active": user.is_active,
             "is_verified": user.is_verified
         }
-    }
-
-@router.post("/refresh-token", response_model=Token)
-def refresh_token(
-    current_user = Depends(deps.get_current_active_user)
-) -> Any:
-    """
-    Refresh access token
-    """
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
-        current_user.id, expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
     }
 
 @router.get("/me", response_model=UserResponse)

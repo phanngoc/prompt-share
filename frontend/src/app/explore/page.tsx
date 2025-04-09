@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
+import { fetchFromApi } from '@/utils/api';
 
 // Type definitions
 interface Prompt {
@@ -37,18 +38,22 @@ interface PromptsResponse {
   total_pages: number;
 }
 
+interface PromptFilterParams {
+  search?: string;
+  category_id?: string;
+  sort?: string;
+  min_price?: string;
+  max_price?: string;
+  page?: number;
+  page_size?: number;
+}
+
 // Helper function to fetch categories
 async function getCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/categories`, {
-      cache: 'no-store'
-    });
-    
-    if (!res.ok) {
-      throw new Error('Failed to fetch categories');
-    }
-    
-    const data = await res.json();
+    // Sử dụng hàm utility để gọi API
+    const data = await fetchFromApi<Category[]>('/categories');
+    console.log('getCategories data:', data);
     return data;
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -57,39 +62,25 @@ async function getCategories(): Promise<Category[]> {
 }
 
 // Helper function to fetch prompts with filters
-async function getPrompts(
-  page = 1,
-  category_id?: string,
-  search?: string,
-  sort_by = 'created_at',
-  sort_order = 'desc',
-  min_price?: string,
-  max_price?: string
-): Promise<PromptsResponse> {
+async function getPrompts(params: PromptFilterParams): Promise<PromptsResponse> {
   try {
-    // Construct URL with query parameters
-    const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/prompts/`);
+    // Build query params
+    const queryParams = new URLSearchParams();
     
-    // Add query parameters
-    url.searchParams.append('page', page.toString());
-    url.searchParams.append('page_size', '12'); // Show 12 prompts per page
-    
-    if (category_id) url.searchParams.append('category_id', category_id);
-    if (search) url.searchParams.append('search', search);
-    if (sort_by) url.searchParams.append('sort_by', sort_by);
-    if (sort_order) url.searchParams.append('sort_order', sort_order);
-    if (min_price) url.searchParams.append('min_price', min_price);
-    if (max_price) url.searchParams.append('max_price', max_price);
-    
-    const res = await fetch(url, { 
-      cache: 'no-store' 
-    });
-    
-    if (!res.ok) {
-      throw new Error('Failed to fetch prompts');
+    if (params.search) queryParams.append('search', params.search);
+    if (params.category_id) queryParams.append('category_id', params.category_id.toString());
+    if (params.sort) {
+      const [sortBy, sortOrder] = params.sort.split(':');
+      queryParams.append('sort_by', sortBy);
+      queryParams.append('sort_order', sortOrder);
     }
+    if (params.min_price) queryParams.append('min_price', params.min_price.toString());
+    if (params.max_price) queryParams.append('max_price', params.max_price.toString());
+    queryParams.append('page', (params.page || 1).toString());
+    queryParams.append('page_size', (params.page_size || 12).toString());
     
-    const data = await res.json();
+    // Sử dụng hàm utility để gọi API
+    const data = await fetchFromApi<PromptsResponse>(`/prompts?${queryParams.toString()}`);
     return data;
   } catch (error) {
     console.error('Error fetching prompts:', error);
@@ -446,20 +437,17 @@ export default async function ExplorePage({
   const minPrice = searchParams.min_price || '';
   const maxPrice = searchParams.max_price || '';
   
-  // Parse sort option
-  const [sortBy, sortOrder] = sortOption.split(':');
-  
   // Fetch data
   const categoriesPromise = getCategories();
-  const promptsPromise = getPrompts(
-    page, 
-    categoryId, 
-    searchQuery, 
-    sortBy, 
-    sortOrder, 
-    minPrice, 
-    maxPrice
-  );
+  const promptsPromise = getPrompts({
+    search: searchQuery,
+    category_id: categoryId,
+    sort: sortOption,
+    min_price: minPrice,
+    max_price: maxPrice,
+    page: page,
+    page_size: 12
+  });
   
   // Wait for both promises to resolve
   const [categories, prompts] = await Promise.all([categoriesPromise, promptsPromise]);

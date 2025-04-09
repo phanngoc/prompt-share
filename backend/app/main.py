@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.api import api_router
 from app.core.config import settings
+from datetime import datetime
 
 app = FastAPI(
     title="Prompt Share API",
@@ -33,7 +34,22 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "timestamp": "2024-03-31T00:00:00Z"
+        "timestamp": datetime.now().isoformat(),
+        "api_prefix": settings.API_V1_STR
+    }
+
+@app.get(f"{settings.API_V1_STR}/health")
+async def api_health_check():
+    return {
+        "status": "API is healthy",
+        "timestamp": datetime.now().isoformat(),
+        "endpoints": [
+            "/auth/login",
+            "/auth/register",
+            "/categories",
+            "/prompts",
+            "/orders"
+        ]
     }
 
 if __name__ == "__main__":
