@@ -15,8 +15,13 @@ class PromptBase(BaseModel):
     title: str
     description: Optional[str] = None
     content: str
+    preview_result: Optional[str] = None
     price: float
     category_id: int
+    is_sequence: Optional[bool] = False
+    parent_id: Optional[int] = None
+    order_index: Optional[int] = 0
+    step_content: Optional[str] = None
 
 class PromptCreate(PromptBase):
     pass
@@ -24,10 +29,15 @@ class PromptCreate(PromptBase):
 class PromptUpdate(PromptBase):
     title: Optional[str] = None
     content: Optional[str] = None
+    preview_result: Optional[str] = None
     price: Optional[float] = None
     category_id: Optional[int] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
+    is_sequence: Optional[bool] = None
+    parent_id: Optional[int] = None
+    order_index: Optional[int] = None
+    step_content: Optional[str] = None
 
 class PromptInDB(PromptBase):
     id: int
@@ -40,6 +50,25 @@ class PromptInDB(PromptBase):
     rating: float
     created_at: datetime
     updated_at: datetime
+    is_favorited: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
+
+class PromptStepBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    step_content: str
+    order_index: int
+    parent_id: int
+
+class PromptStepCreate(PromptStepBase):
+    pass
+
+class PromptStepInDB(PromptStepBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -49,6 +78,7 @@ class PromptFilter(BaseModel):
     min_price: Optional[float] = None
     max_price: Optional[float] = None
     is_featured: Optional[bool] = None
+    is_sequence: Optional[bool] = None
     search: Optional[str] = None
     sort_by: Optional[str] = Field(None, description="Sort by: price, rating, sales, views")
     sort_order: Optional[str] = Field("desc", description="Sort order: asc or desc")

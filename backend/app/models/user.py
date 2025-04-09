@@ -26,4 +26,5 @@ class User(Base):
     orders = relationship("Order", back_populates="user")
     reviews = relationship("Review", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
-    prompt_usage = relationship("PromptUsage", back_populates="user") 
+    prompt_usage = relationship("PromptUsage", back_populates="user")
+    favorites = relationship("Favorite", back_populates="user") 

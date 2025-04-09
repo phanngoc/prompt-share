@@ -39,6 +39,22 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
+Run migrations:
+```bash
+alembic init alembic
+
+alembic revision -m "Message"    # Create empty migration file
+alembic revision --autogenerate -m "Message"  # Auto-generate from model changes
+
+
+alembic upgrade head
+```
+
+Run seed:
+```bash
+python -m app.db.init_db
+```
+
 4. Run the development server:
 ```bash
 uvicorn app.main:app --reload

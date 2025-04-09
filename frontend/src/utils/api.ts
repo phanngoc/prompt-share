@@ -5,6 +5,14 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 /**
+ * Get the auth token from localStorage
+ */
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token');
+}
+
+/**
  * Check if the API is available
  */
 export async function checkApiConnection(): Promise<boolean> {
@@ -47,12 +55,25 @@ export async function fetchFromApi<T>(
     // Log the API call
     logAPICall(normalizedEndpoint, options.method || 'GET');
     
+    // Get auth token if available
+    const token = getAuthToken();
+    
+    // Prepare headers with auth token if available
+    const headers = new Headers(options.headers || {});
+    
+    // Set content type if not already set
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    
     const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {

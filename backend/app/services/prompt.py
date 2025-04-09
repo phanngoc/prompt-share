@@ -7,6 +7,7 @@ from app.schemas.prompt import PromptFilter, PromptCreate, PromptUpdate
 def get_prompts(
     db: Session,
     filter_params: PromptFilter,
+    user_id: Optional[int] = None,
 ) -> tuple[List[Prompt], int]:
     """
     Get prompts with filtering, searching, and pagination
@@ -56,11 +57,26 @@ def get_prompts(
     query = query.offset((filter_params.page - 1) * filter_params.page_size)
     query = query.limit(filter_params.page_size)
 
-    return query.all(), total_count
+    prompts = query.all()
+    
+    # If user_id is provided, check which prompts are favorited by the user
+    if user_id and prompts:
+        from app.services.favorite import is_favorited
+        for prompt in prompts:
+            prompt.is_favorited = is_favorited(db, user_id, prompt.id)
+    
+    return prompts, total_count
 
-def get_prompt(db: Session, prompt_id: int) -> Optional[Prompt]:
+def get_prompt(db: Session, prompt_id: int, user_id: Optional[int] = None) -> Optional[Prompt]:
     """Get a single prompt by ID"""
-    return db.query(Prompt).options(joinedload(Prompt.seller)).filter(Prompt.id == prompt_id).first()
+    prompt = db.query(Prompt).options(joinedload(Prompt.seller)).filter(Prompt.id == prompt_id).first()
+    
+    # If user_id is provided, check if the prompt is favorited by the user
+    if prompt and user_id:
+        from app.services.favorite import is_favorited
+        prompt.is_favorited = is_favorited(db, user_id, prompt_id)
+    
+    return prompt
 
 def increment_views(db: Session, prompt_id: int) -> None:
     """Increment the views count of a prompt"""

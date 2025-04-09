@@ -33,7 +33,7 @@ def seed_database(db: Session):
     # Create admin user if doesn't exist
     admin = User(
         email="admin@example.com",
-        username="admin",
+        username="admin1",
         hashed_password=get_password_hash("admin123"),
         full_name="Admin User",
         role=UserRole.ADMIN,
@@ -559,11 +559,43 @@ def seed_database(db: Session):
         # Random creation date within last 60 days
         created_at = datetime.utcnow() - timedelta(days=random.randint(0, 60))
         
+        # Set sequence-related values for some prompts
+        is_sequence = random.random() < 0.3  # 30% chance of being a sequence
+        parent_id = None
+        order_index = 0
+        step_content = None
+        sol_price = round(prompt_data["price"] * 0.7, 2) if random.random() < 0.6 else None  # 60% chance of having a solution price
+        
+        # Generate preview result based on the prompt category
+        preview_samples = {
+            "Content Writing": "# Sample Blog Post\n\n## Introduction\nThis is a preview of what your SEO-optimized blog post could look like...",
+            "Coding": "```python\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\n# Data preprocessing function\ndef preprocess_data(data):\n    # Clean and prepare data\n    return cleaned_data\n```",
+            "Creative Writing": "The old clock tower stood sentinel over the sleepy town as the first rays of dawn painted the sky in hues of amber and gold...",
+            "Design": "UI Design Brief Preview:\n- Color palette: #3A86FF, #FF006E, #FFBE0B\n- Typography: Montserrat (headings), Open Sans (body)\n- Key components: Navigation bar, Hero section, Feature cards",
+            "Marketing": "Marketing Strategy Summary:\n1. Target Audience: Urban professionals (25-40)\n2. Channels: Instagram, LinkedIn, Email\n3. Key message: 'Transform your workflow in minutes'",
+            "Personal Growth": "Morning Routine Framework:\n1. 6:00 AM - Mindfulness meditation (10 min)\n2. 6:15 AM - Journal writing\n3. 6:30 AM - Exercise\n4. 7:15 AM - Nutritious breakfast",
+            "Education": "Lesson Plan Preview:\n- Learning Objective: Students will understand the water cycle\n- Activities: Interactive diagram, small group experiment, reflection writing",
+            "Art": "<Digital Art Concept>\nSubject: Futuristic cityscape at sunset\nColor palette: Cyberpunk-inspired neons against dark backgrounds\nFocal point: Holographic advertisements reflected in rain puddles",
+            "Technology": "# API Documentation\n\n## Endpoints\n- GET /api/v1/users - Retrieve user list\n- POST /api/v1/auth - Authenticate user\n- PUT /api/v1/profile - Update user profile",
+            "Science": "Literature Review Structure:\n1. Current understanding of quantum computing applications\n2. Limitations in current quantum decoherence research\n3. Emerging methodologies in quantum error correction",
+            "Health": "Weekly Meal Plan Preview:\nMonday: Mediterranean bowl with quinoa, chickpeas, and vegetables\nTuesday: Baked salmon with roasted sweet potatoes and broccoli\nWednesday: Vegetable stir-fry with tofu and brown rice",
+            "Business": "Executive Summary:\nBlueOcean is a SaaS solution for small businesses that automates customer support through AI, reducing response time by 75% and support costs by 40%.",
+            "Lifestyle": "Home Organization System:\nZone 1: Entryway (keys, mail, shoes)\nZone 2: Kitchen (meal planning, food storage)\nZone 3: Living spaces (daily, weekly, monthly maintenance)"
+        }
+        
+        preview_result = preview_samples.get(prompt_data["category"], "Preview not available for this prompt type.")
+        
         prompt = Prompt(
             title=prompt_data["title"],
             description=prompt_data["description"],
             content=prompt_data["content"],
             price=prompt_data["price"],
+            sol_price=sol_price,
+            preview_result=preview_result,
+            is_sequence=is_sequence,
+            parent_id=parent_id,
+            order_index=order_index,
+            step_content=step_content,
             is_active=True,
             is_featured=prompt_data["is_featured"],
             views_count=prompt_data["views_count"],
@@ -629,11 +661,43 @@ def seed_database(db: Session):
         # Random creation date within last 90 days for more variety
         created_at = datetime.utcnow() - timedelta(days=random.randint(0, 90))
         
+        # Set sequence-related values
+        is_sequence = random.random() < 0.25  # 25% chance of being a sequence
+        parent_id = None
+        order_index = 0
+        step_content = None
+        sol_price = round(price * 0.8, 2) if random.random() < 0.5 else None  # 50% chance of having a solution price
+        
+        # Generate preview result based on the prompt category and prompt_type
+        preview_samples = {
+            "Content Writing": f"Sample {prompt_type} about {topic}:\n\nThis is a preview of what your content could look like with key points about {focus}...",
+            "Coding": f"```python\n# Example code for {topic}\n\ndef {topic.lower().replace(' ', '_')}_function(parameters):\n    # Implementation for {focus}\n    # Including {element}\n    return result\n```",
+            "Creative Writing": f"The story begins with {topic} in a world where {focus}. The character faces challenges related to {element}...",
+            "Design": f"Design Concept for {topic}:\n- Style: Minimalist with accent colors\n- Focus on: {focus}\n- Key elements: {element}\n- Responsive across all devices",
+            "Marketing": f"Marketing Strategy for {topic}:\n1. Target audience: {focus}\n2. Key messaging: Benefits of {element}\n3. Channels: Social media, email, content marketing",
+            "Personal Growth": f"Personal Development Plan for {topic}:\n- Daily practice: 20 minutes focused on {focus}\n- Weekly review of progress on {element}\n- Monthly goal setting session",
+            "Education": f"Lesson Overview: {topic}\n- Learning objectives about {focus}\n- Activities incorporating {element}\n- Assessment methods: quiz, project, discussion",
+            "Art": f"Art Concept: {topic}\nMedium: Digital\nStyle: {focus}\nElements: {element}\nColor scheme: Complementary colors with emphasis on contrast",
+            "Technology": f"Technical Documentation for {topic}:\n## Setup\nRequirements: Latest version of programming environment\n## Implementation\nFollow the pattern for {focus}\n## Testing\nVerify functionality of {element}",
+            "Science": f"Research Framework for {topic}:\n1. Current understanding of {focus}\n2. Hypothesis related to {element}\n3. Methodology for testing\n4. Expected outcomes and significance",
+            "Health": f"Wellness Program for {topic}:\nWeek 1: Introduction to {focus}\nWeek 2: Implementing {element} into daily routine\nWeeks 3-4: Measuring progress and adjusting",
+            "Business": f"Business Model for {topic}:\n- Value proposition: {focus}\n- Revenue streams: {element}\n- Customer segments: Early adopters and mainstream market\n- Cost structure: Development, marketing, operations",
+            "Lifestyle": f"Lifestyle Guide for {topic}:\n- Getting started with {focus}\n- Incorporating {element} into your routine\n- Tips for consistency and enjoyment"
+        }
+        
+        preview_result = preview_samples.get(category.name, f"Preview of {prompt_type} for {topic} focused on {focus} and {element}.")
+        
         prompt = Prompt(
             title=title,
             description=description,
             content=content,
             price=price,
+            sol_price=sol_price,
+            preview_result=preview_result,
+            is_sequence=is_sequence,
+            parent_id=parent_id,
+            order_index=order_index,
+            step_content=step_content,
             is_active=True,
             is_featured=is_featured,
             views_count=views_count,

@@ -11,6 +11,7 @@ router = APIRouter()
 @router.get("/", response_model=PromptResponse)
 def list_prompts(
     db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_user_optional),
     category_id: int = None,
     min_price: float = None,
     max_price: float = None,
@@ -36,7 +37,8 @@ def list_prompts(
         page_size=page_size,
     )
 
-    prompts, total_count = prompt_service.get_prompts(db, filter_params)
+    user_id = current_user.id if current_user else None
+    prompts, total_count = prompt_service.get_prompts(db, filter_params, user_id)
     total_pages = (total_count + page_size - 1) // page_size
 
     return PromptResponse(
@@ -51,11 +53,13 @@ def list_prompts(
 def get_prompt(
     prompt_id: int,
     db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_user_optional),
 ):
     """
     Get a single prompt by ID
     """
-    prompt = prompt_service.get_prompt(db, prompt_id)
+    user_id = current_user.id if current_user else None
+    prompt = prompt_service.get_prompt(db, prompt_id, user_id)
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     

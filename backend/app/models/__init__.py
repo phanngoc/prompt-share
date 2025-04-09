@@ -6,6 +6,7 @@ from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.review import Review
 from app.models.subscription import Subscription, SubscriptionPlan, SubscriptionStatus
 from app.models.prompt_usage import PromptUsage
+from app.models.favorite import Favorite
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "SubscriptionPlan",
     "SubscriptionStatus",
     "PromptUsage",
+    "Favorite",
 ] 

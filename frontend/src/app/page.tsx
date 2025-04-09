@@ -159,7 +159,11 @@ export default async function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {featuredPrompts.map(prompt => (
-                <div key={prompt.id} className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <Link 
+                  key={prompt.id} 
+                  href={`/prompts/${prompt.id}`} 
+                  className="bg-white dark:bg-gray-700 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                >
                   <div className="h-48 bg-gray-200 dark:bg-gray-600 relative">
                     {prompt.image_url ? (
                       <Image 
@@ -199,14 +203,9 @@ export default async function Home() {
                         <span className="mx-2 text-gray-500 dark:text-gray-400">•</span>
                         <span className="text-gray-500 dark:text-gray-400 text-sm">{prompt.usage_count || 0} uses</span>
                       </div>
-                      <Link href={`/prompts/${prompt.id}`} className="text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900 p-2 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                      </Link>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

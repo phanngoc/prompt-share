@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import ClientPurchaseSection from "../../components/ClientPurchaseSection";
+import FavoriteButton from "../../components/FavoriteButton";
 import { fetchFromApi } from "@/utils/api";
 
 // Types
@@ -18,8 +19,10 @@ interface Prompt {
   views_count: number;
   sales_count: number;
   created_at: string;
+  is_favorited?: boolean;
   payment_type?: string;
   sol_price?: number;
+  preview_result?: string;
   seller: {
     id: number;
     username: string;
@@ -53,7 +56,7 @@ function formatDate(dateString: string): string {
 }
 
 export default async function PromptDetailsPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+  const { id } = await params
   
   if (!id) {
     notFound();
@@ -92,19 +95,27 @@ export default async function PromptDetailsPage({ params }: { params: { id: stri
               {/* Title and category */}
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  {prompt.category && (
-                    <Link 
-                      href={`/category/${prompt.category.id}`}
-                      className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-medium rounded-full mb-3"
-                    >
-                      {prompt.category.name}
-                    </Link>
-                  )}
-                  {prompt.is_featured && (
-                    <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
-                      Featured
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {prompt.category && (
+                      <Link 
+                        href={`/category/${prompt.category.id}`}
+                        className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-medium rounded-full mb-3"
+                      >
+                        {prompt.category.name}
+                      </Link>
+                    )}
+                    {prompt.is_featured && (
+                      <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <FavoriteButton 
+                      promptId={prompt.id} 
+                      initialFavorited={prompt.is_favorited || false} 
+                    />
+                  </div>
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{prompt.title}</h1>
                 <div className="flex items-center mt-2 space-x-1 text-yellow-400">
@@ -130,7 +141,7 @@ export default async function PromptDetailsPage({ params }: { params: { id: stri
               </div>
               
               {/* Prompt content preview */}
-              <div className="p-6">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Prompt Preview</h2>
                 <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-md relative">
                   <div className="max-h-60 overflow-hidden relative">
@@ -141,6 +152,27 @@ export default async function PromptDetailsPage({ params }: { params: { id: stri
                         : prompt.content}
                     </p>
                     {prompt.content.length > 300 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-100 dark:from-gray-900 to-transparent"></div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Result preview section */}
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Kết quả Preview</h2>
+                <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-md relative">
+                  <div className="max-h-60 overflow-hidden relative">
+                    {prompt.preview_result ? (
+                      <p className="text-gray-800 dark:text-gray-200 font-mono text-sm whitespace-pre-wrap">
+                        {prompt.preview_result.length > 300 
+                          ? prompt.preview_result.substring(0, 300) + '...' 
+                          : prompt.preview_result}
+                      </p>
+                    ) : (
+                      <p className="text-gray-500 italic">Chưa có kết quả preview cho prompt này.</p>
+                    )}
+                    {prompt.preview_result && prompt.preview_result.length > 300 && (
                       <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-100 dark:from-gray-900 to-transparent"></div>
                     )}
                   </div>
