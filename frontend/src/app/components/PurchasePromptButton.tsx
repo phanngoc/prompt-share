@@ -67,8 +67,10 @@ export default function PurchasePromptButton({ prompt }: { prompt: PromptDetails
         }
       }
     };
-
-    updateWalletAddress();
+  
+    if (publicKey) {
+      updateWalletAddress();
+    }
   }, [publicKey]);
   const handlePurchaseClick = async () => {
     try {

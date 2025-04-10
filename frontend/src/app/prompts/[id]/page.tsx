@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import ClientPurchaseSection from "../../components/ClientPurchaseSection";
 import FavoriteButton from "../../components/FavoriteButton";
+import ReviewSection from "@/components/ReviewSection";
 import { fetchFromApi } from "@/utils/api";
 
 // Types
@@ -213,6 +214,9 @@ export default async function PromptDetailsPage({ params }: { params: { id: stri
             </div>
           </div>
         </div>
+        
+        {/* Reviews Section */}
+        <ReviewSection promptId={prompt.id} />
       </div>
     </div>
   );
