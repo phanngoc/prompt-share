@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -15,6 +15,7 @@ interface PromptDetails {
   price: number;
   payment_type?: string; // "fiat" or "sol"
   sol_price?: number;
+  seller_id: number; // Added this field
   seller: {
     id: number;
     username: string;
@@ -32,7 +33,43 @@ export default function PurchasePromptButton({ prompt }: { prompt: PromptDetails
   // Solana wallet connection
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
+  console.log('PurchasePromptButton:publicKey', publicKey);
 
+  // Update wallet address on server when connected
+  useEffect(() => {
+    const updateWalletAddress = async () => {
+      if (publicKey) {
+        try {
+          const user = localStorage.getItem('user');
+          if (!user) return;
+          const userId = JSON.parse(user).id;
+          const token = localStorage.getItem("token");
+          // Update user's wallet address
+          const walletAddress = publicKey.toString();
+          const walletResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/users/${userId}/wallet`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              wallet_address: walletAddress
+            }),
+          });
+
+          if (walletResponse.ok) {
+            console.log("Wallet address updated successfully");
+          } else {
+            console.error("Failed to update wallet address");
+          }
+        } catch (error) {
+          console.error("Error updating wallet address:", error);
+        }
+      }
+    };
+
+    updateWalletAddress();
+  }, [publicKey]);
   const handlePurchaseClick = async () => {
     try {
       // Check if user is authenticated
@@ -103,17 +140,40 @@ export default function PurchasePromptButton({ prompt }: { prompt: PromptDetails
       if (!publicKey) {
         throw new Error("Wallet not connected");
       }
+      console.log('processSOLPayment:prompt', prompt)
+      // Check if seller ID exists - try both seller_id and seller.id
+      const sellerId = prompt?.seller_id || prompt?.seller?.id;
+      if (!sellerId) {
+        console.error("Seller ID is undefined", prompt);
+        throw new Error("Seller information is missing");
+      }
 
       // Get seller's wallet address
       const token = localStorage.getItem("token");
-      const sellerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/users/${prompt.seller.id}/wallet`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      console.log(`Attempting to fetch seller wallet from: ${baseUrl}/users/${sellerId}/wallet`);
+      
+      const sellerResponse = await fetch(
+        `${baseUrl}/users/${sellerId}/wallet`, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
+      console.log("Seller wallet API response:", sellerResponse);
+
+      // Handle 401 Unauthorized - redirect to login
+      if (sellerResponse.status === 401) {
+        // Token is invalid or expired
+        localStorage.removeItem('token');
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        throw new Error('Authentication required. Please login again.');
+      }
+      
       if (!sellerResponse.ok) {
-        throw new Error("Failed to fetch seller's wallet address");
+        throw new Error(`Failed to fetch seller's wallet address: ${sellerResponse.status}`);
       }
 
       const { wallet_address } = await sellerResponse.json();

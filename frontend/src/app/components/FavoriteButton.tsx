@@ -42,9 +42,17 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
             console.error('Error checking favorite status:', favError);
             // Don't set error on UI for better user experience
           }
-        } catch (authError) {
+        } catch (authError: any) {
           console.log('Authentication error, token might be expired:', authError);
           setIsAuthenticated(false);
+          
+          // If 401 Unauthorized, redirect to login page
+          if (authError?.message?.includes('401')) {
+            // Remove invalid token
+            localStorage.removeItem('token');
+            // Redirect to login with return URL
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          }
         }
       } else {
         // No token available
