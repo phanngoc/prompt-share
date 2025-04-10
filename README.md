@@ -2,6 +2,9 @@
 
 A modern marketplace for AI prompts built with Next.js and FastAPI.
 
+![Trang chu](trang-chu.png)
+![Prompt Share](detail.png)
+
 ## Project Structure
 
 ```
